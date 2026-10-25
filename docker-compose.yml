@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16
+    container_name: pg-lab
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: 
+      POSTGRES_DB: visits_db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d visits_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  app:
+    build: .
+    container_name: flask-lab
+    env_file:
+      - .env
+    environment:
+      # Хост — имя сервиса db, а не localhost
+      POSTGRES_HOST: db
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pg_data:
